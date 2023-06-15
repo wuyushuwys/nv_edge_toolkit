@@ -38,7 +38,7 @@ def encode_specs(specs: Device_Specs):
     return dict_specs
 
 
-def set_logging(name, filename=None, datefmt=None):
+def set_logging(name, filename=None, verbose=False):
     # sets up logging for the given name
     logger = logging.getLogger(name)
     if logger.hasHandlers(): return logger 
@@ -46,12 +46,12 @@ def set_logging(name, filename=None, datefmt=None):
                                      datefmt="%Y/%m/%d[%H:%M:%S]")
     ch_formatter = logging.Formatter(fmt="%(asctime)s.%(msecs)03d::%(message)s",
                                      datefmt="%Y/%m/%d[%H:%M:%S]")
-    
+    ch_level = logging.INFO if verbose else logging.DEBUG
     logger.setLevel(logging.DEBUG)
     
     ch = logging.StreamHandler()
 
-    ch.setLevel(level=logging.INFO)
+    ch.setLevel(level=ch_level)
     ch.setFormatter(ch_formatter)
     logger.addHandler(ch)
     

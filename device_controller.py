@@ -287,8 +287,8 @@ class FAN(Component):
 
 class TX2Controller(object):
 
-    def __init__(self, sudo=os.geteuid() == 0):
-        self.logger = set_logging(name='TX2Controller', filename="tx2_controller.txt")
+    def __init__(self, name="TX2Controller", verbose=True, sudo=os.geteuid() == 0):
+        self.logger = set_logging(name=name, filename=f"{name}.txt", verbose=verbose)
         self.GPU=GPU(self.logger, sudo=sudo)
         self.CPU=CPU(self.logger, sudo=sudo)
         self.FAN=FAN(self.logger, sudo=sudo)

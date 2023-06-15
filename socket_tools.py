@@ -16,8 +16,8 @@ class Status(str, Enum):
 
 class Server(object):
 
-    def __init__(self, address='localhost', port=5634, name="server") -> None:
-        self.logger = set_logging(name=name, filename=name)
+    def __init__(self, address='localhost', port=5634, name="server", verbose=True) -> None:
+        self.logger = set_logging(name=name, filename=name, verbose=verbose)
 
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
