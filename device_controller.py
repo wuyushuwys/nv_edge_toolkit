@@ -292,6 +292,9 @@ class TX2Controller(object):
         self.GPU=GPU(self.logger, sudo=sudo)
         self.CPU=CPU(self.logger, sudo=sudo)
         self.FAN=FAN(self.logger, sudo=sudo)
+        self.logger.info(f"Root Mode: {sudo}")
+        if sudo:
+            self.logger.warning(f"Slower if without sudo permission")
         self._reset()
 
     @property
