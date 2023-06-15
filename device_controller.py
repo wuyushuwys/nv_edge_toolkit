@@ -3,7 +3,7 @@ import os
 from sh import bash
 from enum import Enum
 
-from utils import (set_logging,
+from .utils import (set_logging,
                    PASSWORD,
                    decode,
                    Device_Specs,

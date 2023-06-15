@@ -6,7 +6,7 @@ from enum import Enum
 from typing import Union, Dict, AnyStr
 
 from device_controller import TX2Controller
-from utils import set_logging
+from .utils import set_logging
 
 class Status(str, Enum):
 
