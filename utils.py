@@ -47,7 +47,7 @@ def set_logging(name, filename=None, verbose=False):
     ch_formatter = logging.Formatter(fmt="%(asctime)s.%(msecs)03d::%(message)s",
                                      datefmt="%Y/%m/%d[%H:%M:%S]")
     
-    logger.setLevel(logging.INFO if verbose else logging.ERROR)
+    logger.setLevel(logging.DEBUG)
     
     ch = logging.StreamHandler()
 
