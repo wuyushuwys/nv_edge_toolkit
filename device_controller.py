@@ -249,6 +249,29 @@ class FAN(Component):
         return FAN_Specs(speed=self.speed,
                          temp=self.temp,
                          )._asdict()
+    
+    @property
+    def control(self):
+        if self._sudo:
+            with open(f'{self.root}/temp_control', 'r') as f:
+                res = eval(f.read().rstrip('\n'))
+        else:
+            res = sh.cat(f'{self.thermal_root}/temp_control')
+            res = eval(decode(res))
+        self.logger.debug("get FAN temp control flag")
+
+    @control.setter
+    def control(self, flag):
+        flag = flag if isinstance(flag, int) else int(flag)
+        assert flag == 0 or flag == 1, f"flag should be 0/1 but got {flag}"
+        self.logger.debug(f"set FAN temp control to {flag}")
+        if self._sudo:
+            with open(f'{self.root}/temp_control', 'w') as f:
+                f.write(f'{flag}')
+        else:
+            with sh.contrib.sudo(password=PASSWORD, _with=True):
+                bash(f"echo {flag} > {self.root}/temp_control")
+        
 
     @property
     def speed(self):
