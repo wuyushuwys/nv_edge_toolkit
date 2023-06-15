@@ -46,11 +46,12 @@ def set_logging(name, filename=None, verbose=False):
                                      datefmt="%Y/%m/%d[%H:%M:%S]")
     ch_formatter = logging.Formatter(fmt="%(asctime)s.%(msecs)03d::%(message)s",
                                      datefmt="%Y/%m/%d[%H:%M:%S]")
-    logger.setLevel(logging.INFO if verbose else logging.DEBUG)
+    
+    logger.setLevel(logging.INFO if verbose else logging.ERROR)
     
     ch = logging.StreamHandler()
 
-    ch.setLevel(level=logging.INFO if verbose else logging.DEBUG)
+    ch.setLevel(level=logging.INFO if verbose else logging.ERROR)
     ch.setFormatter(ch_formatter)
     logger.addHandler(ch)
     
