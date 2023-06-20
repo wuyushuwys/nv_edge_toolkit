@@ -22,7 +22,8 @@ decode = lambda res: res.stdout.decode('utf-8').split()[0]
 Device_Specs = namedtuple('device', ['CPU', 'GPU', 'FAN'])
 CPU_Specs = namedtuple('CPU', ['gov', 'freq', 'temp'])
 GPU_Specs = namedtuple('GPU', ['gov', 'freq', 'temp'])
-FAN_Specs = namedtuple('FAN', ['speed', 'temp'])
+FAN_Specs = namedtuple('FAN', ['control', 'speed', 'temp'])
+
 
 def parse_specs(specs):
     specs['CPU'] = CPU_Specs(**specs['CPU'])

@@ -5,7 +5,7 @@ import time
 from enum import Enum
 from typing import Union, Dict, AnyStr
 
-from device_controller import TX2Controller
+from .device_controller import TX2Controller
 from .utils import set_logging
 
 class Status(str, Enum):
@@ -16,8 +16,8 @@ class Status(str, Enum):
 
 class Server(object):
 
-    def __init__(self, address='localhost', port=5634, name="server", verbose=True) -> None:
-        self.logger = set_logging(name=name, filename=name, verbose=verbose)
+    def __init__(self, address='localhost', port=5634, name="server", verbose=False) -> None:
+        self.logger = set_logging(name=name, verbose=verbose)
 
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -27,7 +27,7 @@ class Server(object):
         self.logger.info(f"Connect to {self.client_socket.getsockname()}")
         
         self._initiate()
-        
+        time.sleep(1)
 
     def _initiate(self):
         self._recv_buffer = b''
@@ -48,9 +48,10 @@ class Server(object):
         dumps_message = pickle.dumps(message)
         self.client_socket.send(dumps_message)
         self.logger.debug(f"[{Status.SENT}]: {message}")
-        return self.recv()        
+        # return self.recv()        
 
     def recv(self):
+        self.logger.debug('trying to recv message')
         self._recv()
         recv_message = self._recv_message
         self.logger.debug(f"[{Status.RECEIVED}]: {recv_message}")
@@ -67,14 +68,14 @@ class Server(object):
             self._recv()
 
     def close(self):
-        self.send('close')
+        self.server_socket.shutdown(2)
         time.sleep(0.1)
         
 
 class Client(object):
     
-    def __init__(self, address='localhost', port=5634, name="client") -> None:
-        self.logger = set_logging(name=name, filename=name)
+    def __init__(self, address='localhost', port=5634, name="client", verbose=False) -> None:
+        self.logger = set_logging(name=name, verbose=verbose)
         
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         while True:
@@ -86,8 +87,10 @@ class Client(object):
             else:
                 break
         self.logger.info(f"Connect to {self.client_socket.getsockname()}")
-        self.device_controller = TX2Controller()
+        # self.device_controller = TX2Controller()
         self._initiate()
+        self.closed = False
+        time.sleep(1)
         
 
     def _initiate(self):
@@ -97,6 +100,7 @@ class Client(object):
         
     def _handshake_message(self):
         self.send("Handshake from client")
+        self.recv()
     
     def _clean_recv_buffer(self):
         self._recv_buffer = b''
@@ -104,28 +108,28 @@ class Client(object):
     def _clean_recv_message(self):
         self._recv_message = None
 
-    def run(self):
-        self._run()
+    # def run(self):
+    #     self._run()
 
-    def _run(self):
-        recv_message = self.recv()
-        action = self.__placeholder(recv_message)
-        self.send(action)
-        if recv_message == "close":
-            return self.close()
-        self._run()
+    # def _run(self):
+    #     recv_message = self.recv()
+    #     action = self.__placeholder(recv_message)
+    #     self.send(action)
+    #     if recv_message == "close":
+    #         return self.close()
+    #     self._run()
 
-    def __placeholder(self, message):
-        if message == 'action':
-            return "test info"
-        elif isinstance(message, dict):
-            self.logger.debug(f"set specs {message}")
-            self.device_controller.specs = message
-            return 
-        elif message == 'get_specs':
-            return self.device_controller.specs
-        else:
-            return '√'
+    # def __placeholder(self, message):
+    #     if message == 'action':
+    #         return "test info"
+    #     elif isinstance(message, dict):
+    #         self.logger.debug(f"set specs {message}")
+    #         self.device_controller.specs = message
+    #         return 
+    #     elif message == 'get_specs':
+    #         return self.device_controller.specs
+    #     else:
+    #         return '√'
         
 
     def send(self, message: Union[Dict, AnyStr]):
@@ -135,6 +139,7 @@ class Client(object):
         
         
     def recv(self):
+        self.logger.debug('trying to recv message')
         self._recv()
         recv_message = self._recv_message
         self.logger.info(f"[{Status.RECEIVED}]: {recv_message}")
@@ -151,6 +156,6 @@ class Client(object):
             self._recv()
 
     def close(self):
-        self.device_controller._reset()
+        self.client_socket.shutdown(2)
         self.logger.info("Close")
         
