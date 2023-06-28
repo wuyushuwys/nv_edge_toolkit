@@ -16,7 +16,7 @@ __all__ = [
 PASSWORD='nvidia'
 
 
-decode = lambda res: res.stdout.decode('utf-8').split()[0]
+decode = lambda res: eval(res.stdout.decode('utf-8').split()[0])
 
 
 Device_Specs = namedtuple('device', ['CPU', 'GPU', 'FAN'])
