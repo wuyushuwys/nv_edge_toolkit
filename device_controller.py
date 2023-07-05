@@ -191,7 +191,7 @@ class CPU(Component):
                 res = eval(f.read().rstrip('\n'))
         else:
             res = sh.cat(f'{self._thermal_root}/thermal_zone0/trip_point_1_temp')
-            res = eval(decode(res))
+            res = decode(res)
         self.logger.debug(f"get CPU thermal throttling {res}")
         return res
     
@@ -211,21 +211,8 @@ class CPU(Component):
 
 class GPU(Component):
         
-    FREQ = [
-        114750000,
-        216750000,
-        318750000,
-        420750000,
-        522750000,
-        624750000,
-        726750000,
-        854250000,
-        930750000,
-        1032750000,
-        1122000000,
-        1236750000,
-        1300500000
-        ]
+    FREQ = [114750000, 216750000, 318750000, 420750000, 522750000, 624750000, 726750000, 
+            854250000, 930750000, 1032750000, 1122000000, 1236750000, 1300500000]
     
     GOV = ["nvhost_podgov", "userspace"]
 
@@ -364,7 +351,7 @@ class GPU(Component):
                 res = eval(f.read().rstrip('\n'))
         else:
             res = sh.cat(f'{self._thermal_root}/thermal_zone2/trip_point_6_temp')
-            res = eval(decode(res))
+            res = decode(res)
         self.logger.debug(f"get GPU thermal throttling {res}")
         return res
     
