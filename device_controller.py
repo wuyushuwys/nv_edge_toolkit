@@ -2,6 +2,8 @@ import sh
 import os
 from sh import bash
 from enum import Enum
+from typing import Union
+import atexit
 
 from .utils import (set_logging,
                    PASSWORD,
@@ -462,6 +464,7 @@ class TX2Controller(object):
         if not sudo:
             self.logger.warning(f"Slower if without sudo permission")
         self._reset()
+        atexit.register(self._reset)
 
     @property
     def specs(self):
@@ -492,13 +495,20 @@ class TX2Controller(object):
     def reset(self):
         self._reset()
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.reset()
+
 
 class OrinNanoCPU(Component):
 
     FREQ = [
-        # 115200, 192000, 268800, 345600, 422400, 499200, 576000, 652800, 
+            115200, 192000, 268800, 345600, 422400, 499200, 576000, 652800, 
             729600, 806400, 883200, 960000, 1036800, 1113600,
-            1190400, 1267200, 1344000, 1420800, 1497600, 1510400]
+            1190400, 1267200, 1344000, 1420800, 1497600, 1510400
+            ]
     GOV = ["userspace", "schedutil"]
 
     def __init__(self, logger, root='/sys/devices/system/cpu', num=6, sudo=True) -> None:
@@ -614,6 +624,39 @@ class OrinNanoCPU(Component):
             else:
                 with sh.contrib.sudo(password=PASSWORD, _with=True):
                     bash(f"echo {v} > {self.root}/cpu{idx}/cpufreq/scaling_setspeed")
+
+    @property
+    def min_freq(self):
+        freq = {}
+        for cpu_idx in range(self.num):
+            if self._sudo:
+                with open(f'{self.root}/cpu{cpu_idx}/cpufreq/scaling_min_freq', 'r') as f:
+                    res = f.read().rstrip('\n')
+                    freq[str(cpu_idx)] = eval(res)
+            else:
+                res = sh.cat(f'{self.root}/cpu{cpu_idx}/cpufreq/scaling_min_freq')
+                freq[str(cpu_idx)] = eval(res.split()[0])
+        self.logger.debug(f"get CPU scaling_min_freq {freq}")
+        return freq
+
+    @min_freq.setter
+    def min_freq(self, freq):
+        self.logger.debug(f'set CPU scaling_min_freq {freq}')
+        if isinstance(freq, str) or isinstance(freq, int):
+            freq = {i: freq for i in range(self.num)}
+        elif isinstance(freq, dict):
+            freq = {int(idx): int(v) for idx, v in freq.items()}
+        else:
+            NotImplementedError(f"Expected input type Dict/Str/Int, but got {type(freq)}")
+        
+        for idx, v in freq.items():
+            assert v in self.FREQ, f"{v} for {idx} is not avaliable"
+            if self._sudo:
+                with open(f'{self.root}/cpu{idx}/cpufreq/scaling_min_freq', 'w') as f:
+                    f.write(f'{v}')
+            else:
+                with sh.contrib.sudo(password=PASSWORD, _with=True):
+                    bash(f"echo {v} > {self.root}/cpu{idx}/cpufreq/scaling_min_freq")
 
     @property
     def temp(self):
@@ -887,6 +930,8 @@ class OrinNanoController(object):
         if not sudo:
             self.logger.warning(f"Slower if without sudo permission")
         self._reset()
+        self.CPU.min_freq = self.CPU.FREQ[0]
+        atexit.register(self._reset)
 
     @property
     def specs(self):
@@ -908,6 +953,7 @@ class OrinNanoController(object):
         self.logger.info('Reset configurations')
         self.CPU.online = 1
         self.CPU.gov = 'schedutil'
+        self.CPU.min_freq = 729600
         self.CPU.throttling = 99000
         self.GPU.gov = 'nvhost_podgov'
         self.GPU.throttling = 99000
@@ -916,3 +962,14 @@ class OrinNanoController(object):
         
     def reset(self):
         self._reset()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.reset()
+
+
+if __name__ == "__main__":
+    with OrinNanoController() as controller:
+        pass
