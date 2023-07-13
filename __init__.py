@@ -1,4 +1,5 @@
-from .device_controller import TX2Controller, CPU, GPU
+from .device_controller import TX2Controller, TX2CPU, TX2GPU
+from .device_controller import *
 from .socket_tools import Server, Client
 from .utils import set_logging
 
