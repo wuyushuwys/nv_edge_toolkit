@@ -504,6 +504,7 @@ class OrinNanoCPU(Component):
     def __init__(self, logger, root='/sys/devices/system/cpu', num=6, sudo=True) -> None:
         super(OrinNanoCPU, self).__init__(logger=logger, root=root, num=num, sudo=sudo)
         self._throttling_bound = self.throttling
+        self.gov = "schedutil"
 
     @property
     def specs(self):
@@ -634,7 +635,6 @@ class OrinNanoCPU(Component):
         else:
             res = sh.cat(f'{self._thermal_root}/thermal_zone0/trip_point_1_temp')
         self.logger.debug(f"get CPU thermal throttling {res}")
-        print(type(res), type(eval(res)))
         return eval(res)
     
     @throttling.setter
@@ -653,16 +653,16 @@ class OrinNanoCPU(Component):
 
 class OrinNanoGPU(Component):
         
-    FREQ = [114750000, 216750000, 318750000, 420750000, 522750000, 624750000, 726750000, 
-            854250000, 930750000, 1032750000, 1122000000, 1236750000, 1300500000]
+    FREQ = [306000000, 408000000, 510000000, 612000000, 624750000]
     
     GOV = ["nvhost_podgov", "userspace"]
 
-    def __init__(self, logger, root='/sys/devices/gpu.0/devfreq/17000000.gp10b', sudo=True) -> None:
+    def __init__(self, logger, root='/sys/devices/gpu.0/devfreq/17000000.ga10b', sudo=True) -> None:
         super(OrinNanoGPU, self).__init__(logger=logger, root=root, sudo=sudo)
         self._throttling_bound = self.throttling
         self.min_freq = min(self.FREQ)
         self.max_freq = max(self.FREQ)
+        self.gov = "nvhost_podgov"
 
     @property
     def specs(self):
@@ -679,7 +679,6 @@ class OrinNanoGPU(Component):
                 res = f.read().rstrip('\n')
         else:
             res = sh.cat(f'{self.root}/governor')
-            res = decode(res)
         self.logger.debug(f"get GPU governor {res}")
         return res
 
@@ -701,7 +700,7 @@ class OrinNanoGPU(Component):
                 res = eval(f.read().rstrip('\n'))
         else:
             res = sh.cat(f'{self.root}/max_freq')
-            res = decode(res)
+            res = eval(res)
         self.logger.debug(f"get GPU max_freq {res}")
         return res
     
@@ -724,7 +723,7 @@ class OrinNanoGPU(Component):
                 res = eval(f.read().rstrip('\n'))
         else:
             res = sh.cat(f'{self.root}/min_freq')
-            res = decode(res)
+            res = eval(res)
         self.logger.debug(f"get GPU min_freq {res}")
         return res
     
@@ -747,7 +746,7 @@ class OrinNanoGPU(Component):
                 res = eval(f.read().rstrip('\n'))
         else:
             res = sh.cat(f'{self.root}/cur_freq')
-            res = decode(res)
+            res = eval(res)
         self.logger.debug(f"get GPU clock {res}")
         return res
     
@@ -776,11 +775,11 @@ class OrinNanoGPU(Component):
     @property
     def temp(self):
         if self._sudo:
-            with open(f'{self._thermal_root}/thermal_zone2/temp', 'r') as f:
+            with open(f'{self._thermal_root}/thermal_zone1/temp', 'r') as f:
                 res = eval(f.read().rstrip('\n'))
         else:
-            res = sh.cat(f'{self._thermal_root}/thermal_zone2/temp')
-            res = eval(decode(res))
+            res = sh.cat(f'{self._thermal_root}/thermal_zone1/temp')
+            res = eval(res)
         self.logger.debug(f"get GPU temp {res}")
         if res >= self._throttling_bound:
             self.logger.warning(f"Temperature higher than{self._throttling_bound}, GPU throttling has been enabled")
@@ -789,11 +788,11 @@ class OrinNanoGPU(Component):
     @property
     def throttling(self):
         if self._sudo:
-            with open(f'{self._thermal_root}/thermal_zone2/trip_point_6_temp', 'r') as f:
+            with open(f'{self._thermal_root}/thermal_zone2/trip_point_1_temp', 'r') as f:
                 res = eval(f.read().rstrip('\n'))
         else:
-            res = sh.cat(f'{self._thermal_root}/thermal_zone2/trip_point_6_temp')
-            res = decode(res)
+            res = sh.cat(f'{self._thermal_root}/thermal_zone2/trip_point_1_temp')
+            res = eval(res)
         self.logger.debug(f"get GPU thermal throttling {res}")
         return res
     
@@ -804,57 +803,52 @@ class OrinNanoGPU(Component):
         self._throttling_bound = int(throttling)
         self.logger.debug(f"set GPU thermal throttling {throttling}")
         if self._sudo:
-            with open(f'{self._thermal_root}/thermal_zone2/trip_point_6_temp', 'w') as f:
+            with open(f'{self._thermal_root}/thermal_zone2/trip_point_1_temp', 'w') as f:
                 f.write(f'{throttling}')
         else:
             with sh.contrib.sudo(password=PASSWORD, _with=True):
-                bash(f"echo {throttling} > {self._thermal_root}/thermal_zone2/trip_point_6_temp")
+                bash(f"echo {throttling} > {self._thermal_root}/thermal_zone2/trip_point_1_temp")
 
 
 class OrinNanoFAN(Component):
 
-    def __init__(self, logger, root='/sys/devices/pwm-fan', sudo=True) -> None:
+    def __init__(self, logger, root='/sys/class/hwmon', sudo=True) -> None:
         super(OrinNanoFAN, self).__init__(logger=logger, root=root, sudo=sudo)
-        self.rpm_path = '/sys/devices/generic_pwm_tachometer/hwmon/hwmon1/rpm'
+        self.rpm_path = '/sys/class/hwmon/hwmon0/rpm'
+        self.control_dict = {1: 'start', 0: 'stop'}
 
     @property
     def specs(self):
         self.logger.info("Retrive FAN specs")
-        return FAN_Specs(control=self.control,
-                         speed=self.speed,
-                         temp=self.temp,
-                         )._asdict()
+        return dict(speed=self.speed)
     
     @property
     def control(self):
-        if self._sudo:
-            with open(f'{self.root}/temp_control', 'r') as f:
-                res = eval(f.read().rstrip('\n'))
-        else:
-            res = sh.cat(f'{self.root}/temp_control')
-            res = eval(decode(res))
+        try:
+            with sh.contrib.sudo(password=PASSWORD, _with=True):
+                res = bash(f"systemctl is-active nvfancontrol.service").rstrip('\n')
+                res = 1 if res == 'active' else 0
+        except sh.ErrorReturnCode_3:
+            res = 0 # 'inactive'
         self.logger.debug(f"get FAN temp control {res}")
+        return res
 
     @control.setter
     def control(self, flag):
         flag = flag if isinstance(flag, int) else int(flag)
         assert flag == 0 or flag == 1, f"flag should be 0/1 but got {flag}"
         self.logger.debug(f"set FAN temp control to {flag}")
-        if self._sudo:
-            with open(f'{self.root}/temp_control', 'w') as f:
-                f.write(f'{flag}')
-        else:
-            with sh.contrib.sudo(password=PASSWORD, _with=True):
-                bash(f"echo {flag} > {self.root}/temp_control")
+        with sh.contrib.sudo(password=PASSWORD, _with=True):
+            bash(f"systemctl {self.control_dict[flag]} nvfancontrol.service")
         
     @property
     def speed(self):
         if self._sudo:
-            with open(f'{self.root}/target_pwm', 'r') as f:
+            with open(f'{self.root}/hwmon2/pwm1', 'r') as f:
                 res = eval(f.read().rstrip('\n'))
         else:
-            res = sh.cat(f'{self.root}/target_pwm')
-            res = decode(res)
+            res = sh.cat(f'{self.root}/hwmon2/pwm1')
+            res = eval(res)
         self.logger.debug(f"get FAN speed {res}")
         return res
 
@@ -864,11 +858,11 @@ class OrinNanoFAN(Component):
         assert 0 <= float(freq) <=255, f"{freq} should between [0, 255]"
         self.logger.debug(f"set FAN speed {freq}")
         if self._sudo:
-            with open(f'{self.root}/target_pwm', 'w') as f:
+            with open(f'{self.root}/hwmon2/pwm1', 'w') as f:
                 f.write(f'{freq}')
         else:
             with sh.contrib.sudo(password=PASSWORD, _with=True):
-                bash(f"echo {freq} > {self.root}/target_pwm")
+                bash(f"echo {freq} > {self.root}/hwmon2/pwm1")
     
     @property
     def rpm(self):
@@ -877,21 +871,9 @@ class OrinNanoFAN(Component):
                 res = eval(f.read().rstrip('\n'))
         else:
             res = sh.cat(self.rpm_path)
-            res = eval(decode(res))
+            res = eval(res)
         self.logger.debug(f"get FAN rpm {res}")
         return res
-    
-    @property
-    def temp(self):
-        if self._sudo:
-            with open(f'{self._thermal_root}/thermal_zone7/temp', 'r') as f:
-                res = eval(f.read().rstrip('\n'))
-        else:
-            res = sh.cat(f'{self._thermal_root}/thermal_zone7/temp')
-            res = eval(decode(res))
-        self.logger.debug(f"get FAN temp {res}")
-        return res
-
 
 
 class OrinNanoController(object):
@@ -926,9 +908,9 @@ class OrinNanoController(object):
         self.logger.info('Reset configurations')
         self.CPU.online = 1
         self.CPU.gov = 'schedutil'
-        self.CPU.throttling = 95500
+        self.CPU.throttling = 99000
         self.GPU.gov = 'nvhost_podgov'
-        self.GPU.throttling = 95500
+        self.GPU.throttling = 99000
         self.FAN.speed = 0
         self.FAN.control = 1
         
