@@ -863,7 +863,7 @@ class OrinNanoFAN(Component):
     @property
     def specs(self):
         self.logger.info("Retrive FAN specs")
-        return dict(speed=self.speed)
+        return dict(speed=self.speed, rpm=self.rpm)
     
     @property
     def control(self):
