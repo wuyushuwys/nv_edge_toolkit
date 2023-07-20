@@ -3,6 +3,10 @@ from .device_controller import *
 from .socket_tools import Server, Client
 from .utils import set_logging
 
+__version__ = "0.1.0"
+__author__ = 'Yushu Wu'
+__credits__ = 'Northeastern Univeristy'
+
 IP_ADDR="192.168.55.100"
 PORT=5634
 

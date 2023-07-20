@@ -1,9 +1,9 @@
 import sh
 import os
 from sh import bash
-from enum import Enum
-from typing import Union
-import atexit
+# from enum import Enum
+# from typing import Union
+# import atexit
 
 from .utils import (set_logging,
                    PASSWORD,
@@ -11,15 +11,10 @@ from .utils import (set_logging,
                    Device_Specs,
                    CPU_Specs,
                    GPU_Specs,
-                   FAN_Specs,
-                   parse_specs)
+                   FAN_Specs
+                   )
 
 bash = sh.bash.bake('-c')
-
-class COMPONENT(str, Enum):
-    CPU='CPU'
-    GPU='GPU'
-    FAN='FAN'
 
 
 class Component():
@@ -464,7 +459,7 @@ class TX2Controller(object):
         if not sudo:
             self.logger.warning(f"Slower if without sudo permission")
         self._reset()
-        atexit.register(self._reset)
+        # atexit.register(self._reset)
 
     @property
     def specs(self):
@@ -504,7 +499,7 @@ class TX2Controller(object):
 
 class OrinNanoCPU(Component):
     
-    FREQ = [ 115200, 192000, 268800, 345600, 422400, 499200, 576000, 652800, 
+    FREQ = [115200, 192000, 268800, 345600, 422400, 499200, 576000, 652800, 
             729600, 806400, 883200, 960000, 1036800, 1113600, 
             1190400, 1267200, 1344000, 1420800, 1497600, 1510400]
     GOV = ["userspace", "schedutil"]
@@ -929,7 +924,7 @@ class OrinNanoController(object):
             self.logger.warning(f"Slower if without sudo permission")
         self._reset()
         self.CPU.min_freq = self.CPU.FREQ[0]
-        atexit.register(self._reset)
+        # atexit.register(self._reset)
 
     @property
     def specs(self):

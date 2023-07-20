@@ -1,5 +1,5 @@
 import logging
-from collections import namedtuple, OrderedDict
+from collections import namedtuple
 
 __all__ = [
     'PASSWORD',
