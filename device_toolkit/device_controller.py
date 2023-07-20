@@ -484,7 +484,7 @@ class TX2Controller(object):
         self.CPU.throttling = 95500
         self.GPU.gov = 'nvhost_podgov'
         self.GPU.throttling = 95500
-        self.FAN.speed = 0
+        self.FAN.speed = 60
         self.FAN.control = 1
         
     def reset(self):
