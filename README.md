@@ -6,7 +6,9 @@ NVIDIA Jetson Control Toolkit
 `pip install git+https://github.com/wuyushuwys/DeviceToolkit.git`
 
 ## Example
+
 ```python
+# example.py
 from device_toolkit import OrinNanoController
 controller = OrinNanoController(name='orin', verbose=False)
 
@@ -30,7 +32,7 @@ controller.GPU.governor = 'userspace'
 # Reset controller to default
 controller.reset()
 ```
-
+`sudo python examples/example.py` # Using **sudo** for the best efficieny in W/R
 ## Dependencies
  - python3>=3.8
  - sh
