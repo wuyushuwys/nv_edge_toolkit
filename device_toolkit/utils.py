@@ -56,8 +56,14 @@ def set_logging(name, filename=None, verbose=False):
     ch.setLevel(level=logging.INFO if verbose else logging.ERROR)
     ch.setFormatter(ch_formatter)
     logger.addHandler(ch)
-    dirname, _ = os.path.split(filename)
+
+    dirname, _ = os.path.split(name)
     if not os.path.exists(dirname): os.makedirs(dirname, exist_ok=True)
+    
+    if filename:
+        dirname, _ = os.path.split(filename)
+        if not os.path.exists(dirname): os.makedirs(dirname, exist_ok=True)
+    
     fh = logging.FileHandler(filename=filename if filename else f"{name}.log",
                              mode='w')
     fh.setLevel(level=logging.DEBUG)
