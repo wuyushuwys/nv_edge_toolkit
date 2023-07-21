@@ -1,8 +1,9 @@
 from .device_controller import TX2Controller, OrinNanoController
+from .device_controller import TX2GPU, TX2CPU, OrinNanoGPU, OrinNanoCPU 
 from .socket_tools import Server, Client
 from .utils import set_logging
 
-__version__ = "0.2.3"
+__version__ = "0.2.3a"
 __author__ = 'Yushu Wu'
 __credits__ = 'Northeastern Univeristy'
 
