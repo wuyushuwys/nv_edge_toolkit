@@ -1,5 +1,4 @@
-from .device_controller import TX2Controller, TX2CPU, TX2GPU
-from .device_controller import *
+from .device_controller import TX2Controller, OrinNanoController
 from .socket_tools import Server, Client
 from .utils import set_logging
 
@@ -12,6 +11,7 @@ PORT=5634
 
 __all__ = [
     'TX2Controller',
+    'OrinNanoController',
     'Server',
     'Client',
     'IP_ADDR',
