@@ -40,7 +40,7 @@ def encode_specs(specs: Device_Specs):
     return dict_specs
 
 
-def set_logging(name, filename=None, verbose=False):
+def set_logging(name, verbose=False):
     # sets up logging for the given name
     logger = logging.getLogger(name)
     if logger.hasHandlers(): return logger 
@@ -58,15 +58,12 @@ def set_logging(name, filename=None, verbose=False):
     logger.addHandler(ch)
 
     dirname, _ = os.path.split(name)
-    if dirname is not '' and not os.path.exists(dirname):
-        os.makedirs(dirname, exist_ok=True)
-
-    if filename:
-        dirname, _ = os.path.split(filename)
-        if dirname is not '' and not os.path.exists(dirname):
+    if dirname != '':
+        if not os.path.exists(dirname):
             os.makedirs(dirname, exist_ok=True)
+
     
-    fh = logging.FileHandler(filename=filename if filename else f"{name}.log",
+    fh = logging.FileHandler(filename=f"{name}.log",
                              mode='w')
     fh.setLevel(level=logging.DEBUG)
     fh.setFormatter(fh_formatter)

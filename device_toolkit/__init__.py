@@ -3,7 +3,7 @@ from .device_controller import *
 from .socket_tools import Server, Client
 from .utils import set_logging
 
-__version__ = "0.2.2"
+__version__ = "0.2.3"
 __author__ = 'Yushu Wu'
 __credits__ = 'Northeastern Univeristy'
 
