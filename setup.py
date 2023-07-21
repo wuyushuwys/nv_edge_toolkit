@@ -2,8 +2,8 @@ from setuptools import setup
 
 setup(
     name='device_toolkit',
-    python_requires='>3.7.0',
-    version='0.2.0',
+    python_requires='>3.8.0',
+    version='0.2.1',
     description='Device control toolkit for Nvidia Jetson TX2 and Orin Nano',
     url='',
     author='wu.yushu',
