@@ -58,11 +58,13 @@ def set_logging(name, filename=None, verbose=False):
     logger.addHandler(ch)
 
     dirname, _ = os.path.split(name)
-    if not os.path.exists(dirname): os.makedirs(dirname, exist_ok=True)
-    
+    if dirname is not '' and not os.path.exists(dirname):
+        os.makedirs(dirname, exist_ok=True)
+
     if filename:
         dirname, _ = os.path.split(filename)
-        if not os.path.exists(dirname): os.makedirs(dirname, exist_ok=True)
+        if dirname is not '' and not os.path.exists(dirname):
+            os.makedirs(dirname, exist_ok=True)
     
     fh = logging.FileHandler(filename=filename if filename else f"{name}.log",
                              mode='w')
