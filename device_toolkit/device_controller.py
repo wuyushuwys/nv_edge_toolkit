@@ -914,7 +914,7 @@ class OrinNanoFAN(Component):
 
 class OrinNanoController(object):
 
-    def __init__(self, name="TX2Controller", verbose=True, sudo=os.geteuid() == 0):
+    def __init__(self, name="OrinNanoController", verbose=True, sudo=os.geteuid() == 0):
         self.logger = set_logging(name=name, verbose=verbose)
         self.GPU=OrinNanoGPU(self.logger, sudo=sudo)
         self.CPU=OrinNanoCPU(self.logger, sudo=sudo)
