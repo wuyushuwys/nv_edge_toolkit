@@ -3,6 +3,8 @@ from .device_controller import TX2GPU, TX2CPU, OrinNanoGPU, OrinNanoCPU
 from .socket_tools import Server, Client
 from .utils import set_logging
 
+import pprint
+
 __version__ = "0.2.3a"
 __author__ = 'Yushu Wu'
 __credits__ = 'Northeastern Univeristy'
@@ -19,3 +21,7 @@ __all__ = [
     'PORT',
     'set_logging',
 ]
+
+def orinspec():
+    controller = OrinNanoController()
+    pprint.pprint(controller.specs)
