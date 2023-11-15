@@ -919,7 +919,7 @@ class BaseController(object):
         
         # Wait until Fan stop
         self.FAN.speed = 0
-        while controller.FAN.rpm != 0:
+        while self.FAN.rpm != 0:
             time.sleep(1)
             pbar.set_description(f"pwm:{self.FAN.speed} rpm:{self.FAN.rpm}-->0 temp:{self.CPU.temp/1000:.02f}")
         
