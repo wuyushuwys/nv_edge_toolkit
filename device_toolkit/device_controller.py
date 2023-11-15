@@ -906,6 +906,9 @@ class BaseController(object):
         control_flag = self.FAN.control
         self.FAN.control = 0
 
+        # max fan speed
+        self.FAN.speed = 255
+
         # Create progress bar
         pbar = tqdm.tqdm(dynamic_ncols=True, desc=f"pwm:{self.FAN.speed} rpm:{self.FAN.rpm} temp:{self.CPU.temp/1000:.02f}-->{temp_bound:.02f}")
         
