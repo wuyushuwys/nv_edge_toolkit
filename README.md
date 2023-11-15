@@ -56,5 +56,8 @@ controller.reset()
    - governor (rw)
    - temperature (r)
 
+## Functions
+  - cooldown(temp_bound: int): `cooldown the device until reach [temp_bound]`
+
 ### Notice
  - `sudo` for best efficiency
