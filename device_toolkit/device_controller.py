@@ -1,9 +1,8 @@
 import sh
 import os
 from sh import bash
-# from enum import Enum
-# from typing import Union
-# import atexit
+import tqdm
+import time
 
 from .utils import (set_logging,
                    PASSWORD,
@@ -446,56 +445,7 @@ class TX2FAN(Component):
             res = eval(decode(res))
         self.logger.debug(f"get FAN temp {res}")
         return res
-
-
-class TX2Controller(object):
-
-    def __init__(self, name="TX2Controller", verbose=True, sudo=os.geteuid() == 0):
-        self.logger = set_logging(name=name, verbose=verbose)
-        self.GPU=TX2GPU(self.logger, sudo=sudo)
-        self.CPU=TX2CPU(self.logger, sudo=sudo)
-        self.FAN=TX2FAN(self.logger, sudo=sudo)
-        self.logger.info(f"Root Mode: {sudo}")
-        if not sudo:
-            self.logger.warning(f"Slower if without sudo permission")
-        self._reset()
-        # atexit.register(self._reset)
-
-    @property
-    def specs(self):
-        return Device_Specs(
-            CPU=self.CPU.specs,
-            GPU=self.GPU.specs,
-            FAN=self.FAN.specs
-        )._asdict()
-
-    @specs.setter
-    def specs(self, specs: dict):
-        for k, spec_dict in specs.items():
-            module = getattr(self, k)
-            for k, v in spec_dict.items():
-                setattr(module, k, v)
-        
     
-    def _reset(self):
-        self.logger.info('Reset configurations')
-        self.CPU.online = 1
-        self.CPU.gov = 'schedutil'
-        self.CPU.throttling = 95500
-        self.GPU.gov = 'nvhost_podgov'
-        self.GPU.throttling = 95500
-        self.FAN.speed = 60
-        self.FAN.control = 1
-        
-    def reset(self):
-        self._reset()
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        self.reset()
-
 
 class OrinNanoCPU(Component):
     
@@ -912,19 +862,20 @@ class OrinNanoFAN(Component):
         return res
 
 
-class OrinNanoController(object):
+class BaseController(object):
 
-    def __init__(self, name="OrinNanoController", verbose=True, sudo=os.geteuid() == 0):
-        self.logger = set_logging(name=name, verbose=verbose)
-        self.GPU=OrinNanoGPU(self.logger, sudo=sudo)
-        self.CPU=OrinNanoCPU(self.logger, sudo=sudo)
-        self.FAN=OrinNanoFAN(self.logger, sudo=sudo)
-        self.logger.info(f"Root Mode: {sudo}")
-        if not sudo:
-            self.logger.warning(f"Slower if without sudo permission")
+    def __init__(self, logger, gpu, cpu, fan) -> None:
+        self.logger = logger
+        self.GPU = gpu
+        self.CPU = cpu
+        self.FAN = fan
         self._reset()
-        self.CPU.min_freq = self.CPU.FREQ[0]
-        # atexit.register(self._reset)
+
+    def _reset(self):
+        raise NotImplementedError("reset function not implemented")
+    
+    def reset(self):
+        self._reset()
 
     @property
     def specs(self):
@@ -933,15 +884,88 @@ class OrinNanoController(object):
             GPU=self.GPU.specs,
             FAN=self.FAN.specs
         )._asdict()
-
+    
     @specs.setter
     def specs(self, specs: dict):
         for k, spec_dict in specs.items():
             module = getattr(self, k)
             for k, v in spec_dict.items():
                 setattr(module, k, v)
-        
+
+    def __enter__(self):
+        return self
     
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.reset()
+
+    def cooldown(self, temp_bound=50):
+        '''
+        Cooldown the device
+        '''
+        # Disable fan control
+        control_flag = self.FAN.control
+        self.FAN.control = 0
+
+        # Create progress bar
+        pbar = tqdm.tqdm(dynamic_ncols=True, desc=f"pwm:{self.FAN.speed} rpm:{self.FAN.rpm} temp:{self.CPU.temp/1000:.02f}-->{temp_bound:.02f}")
+        
+        # Cooldown until temp_bound
+        while self.CPU.temp/1000 > temp_bound:
+            time.sleep(1)
+            pbar.set_description(f"pwm:{self.FAN.speed} rpm:{self.FAN.rpm} temp:{self.CPU.temp/1000:.02f}-->{temp_bound:.02f}")
+        
+        # Wait until Fan stop
+        self.FAN.speed = 0
+        while controller.FAN.rpm != 0:
+            time.sleep(1)
+            pbar.set_description(f"pwm:{self.FAN.speed} rpm:{self.FAN.rpm}-->0 temp:{self.CPU.temp/1000:.02f}")
+        
+        # Close progess bar
+        pbar.close()
+
+        # Restore fan control status
+        self.FAN.control = control_flag
+       
+
+    
+
+class TX2Controller(BaseController):
+
+    def __init__(self, name="TX2Controller", verbose=True, sudo=os.geteuid() == 0):
+        logger = set_logging(name=name, verbose=verbose)
+        gpu = TX2GPU(logger, sudo=sudo)
+        cpu = TX2CPU(logger, sudo=sudo)
+        fan = TX2FAN(self.logger, sudo=sudo)
+
+        logger.info(f"Root Mode: {sudo}")
+        if not sudo:
+            logger.warning(f"Slower if without sudo permission")
+        super(TX2Controller, self).__init__(logger=logger, gpu=gpu, cpu=cpu, fan=fan)
+
+    def _reset(self):
+        self.logger.info('Reset configurations')
+        self.CPU.online = 1
+        self.CPU.gov = 'schedutil'
+        self.CPU.throttling = 95500
+        self.GPU.gov = 'nvhost_podgov'
+        self.GPU.throttling = 95500
+        self.FAN.speed = 60
+        self.FAN.control = 1
+
+class OrinNanoController(BaseController):
+
+    def __init__(self, name="OrinNanoController", verbose=True, sudo=os.geteuid() == 0):
+        logger = set_logging(name=name, verbose=verbose)
+        gpu = OrinNanoGPU(logger, sudo=sudo)
+        cpu = OrinNanoCPU(logger, sudo=sudo)
+        fan = OrinNanoFAN(logger, sudo=sudo)
+        logger.info(f"Root Mode: {sudo}")
+        if not sudo:
+            logger.warning(f"Slower if without sudo permission")
+        
+        super(OrinNanoController, self).__init__(logger=logger, gpu=gpu, cpu=cpu, fan=fan)
+        self.CPU.min_freq = self.CPU.FREQ[0]
+
     def _reset(self):
         self.logger.info('Reset configurations')
         self.CPU.online = 1
@@ -952,16 +976,6 @@ class OrinNanoController(object):
         self.GPU.throttling = 99000
         self.FAN.speed = 0
         self.FAN.control = 1
-        
-    def reset(self):
-        self._reset()
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        self.reset()
-
 
 if __name__ == "__main__":
     with OrinNanoController() as controller:
