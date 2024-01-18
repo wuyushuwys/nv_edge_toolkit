@@ -22,10 +22,22 @@ class PowerMonitor():
                  logger, 
                  hwmon_root="/sys/bus/i2c/drivers/ina3221/1-0040/hwmon/hwmon",
                  SOCTHERM_OC=3,
+                 mode='VDD_IN',
                  sudo=False) -> None:
         self._sudo = sudo
         self.logger = logger
+        self.mode = mode
         self._hwmon_root = f"{hwmon_root}{SOCTHERM_OC}"
+
+    def __call__(self):
+        if self.mode == 'VDD_IN':
+            return self.VDD_IN
+        elif self.mode == 'VDD_CPU_GPU_CV':
+            return self.VDD_CPU_GPU_CV
+        elif self.mode == 'VDD_SOC':
+            return self.VDD_SOC
+        else:
+            raise NotImplementedError(f"{self.mode} is not implemented.")
 
     @property
     def VDD_IN(self):
@@ -40,7 +52,7 @@ class PowerMonitor():
             voltage = sh.cat(f'{self._hwmon_root}/in1_input')
             voltage = decode(current)
         
-        res = dict(current=current, voltage=voltage)
+        res = dict(current=eval(current), voltage=eval(voltage))
         self.logger.debug(f"vdd_in\t{res}")
         return res    
     
@@ -57,7 +69,7 @@ class PowerMonitor():
             voltage = sh.cat(f'{self._hwmon_root}/in2_input')
             voltage = decode(current)
 
-        res = dict(current=current, voltage=voltage)
+        res = dict(current=eval(current), voltage=eval(voltage))
         self.logger.debug(f"vdd_cpu_gpu_cv\t{res}")
         return res
 
@@ -74,7 +86,7 @@ class PowerMonitor():
             voltage = sh.cat(f'{self._hwmon_root}/in3_input')
             voltage = decode(current)
 
-        res = dict(current=current, voltage=voltage)
+        res = dict(current=eval(current), voltage=eval(voltage))
         self.logger.debug(f"vdd_soc\t{res}")
         return res
 
@@ -1024,7 +1036,10 @@ class OrinNanoController(BaseController):
         gpu = OrinNanoGPU(logger, sudo=sudo)
         cpu = OrinNanoCPU(logger, sudo=sudo)
         fan = OrinNanoFAN(logger, sudo=sudo)
-        power_monitor = PowerMonitor(logger, sudo=sudo, hwmon_root='/sys/bus/i2c/drivers/ina3221/1-0040/hwmon/hwmon', SOCTHERM_OC=3)
+        power_monitor = PowerMonitor(logger, sudo=sudo,
+                                     hwmon_root='/sys/bus/i2c/drivers/ina3221/1-0040/hwmon/hwmon',
+                                     SOCTHERM_OC=3,
+                                     mode='VDD_IN')
         logger.info(f"Root Mode: {sudo}")
         if not sudo:
             logger.warning(f"Slower if without sudo permission")
@@ -1038,7 +1053,7 @@ class OrinNanoController(BaseController):
             CPU=self.CPU.specs,
             GPU=self.GPU.specs,
             FAN=self.FAN.specs,
-            POWER=self.PowerMonitor.VDD_IN,
+            POWER=self.PowerMonitor(),
         )._asdict()
 
     def _reset(self):
