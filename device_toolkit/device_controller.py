@@ -30,7 +30,14 @@ class PowerMonitor():
         self._hwmon_root = f"{hwmon_root}{SOCTHERM_OC}"
 
     def __call__(self):
-        return getattr(self, self.mode)
+        if self.mode == 'VDD_IN':
+            return self.VDD_IN
+        elif self.mode == 'VDD_CPU_GPU_CV':
+            return self.VDD_CPU_GPU_CV
+        elif self.mode == 'VDD_SOC':
+            return self.VDD_SOC
+        else:
+            raise NotImplementedError
 
     @property
     def VDD_IN(self):
