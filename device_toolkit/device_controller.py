@@ -7,13 +7,76 @@ import time
 from .utils import (set_logging,
                    PASSWORD,
                    decode,
-                   Device_Specs,
+                   Device_Specs, Device_power_Specs,
                    CPU_Specs,
                    GPU_Specs,
                    FAN_Specs
                    )
 
 bash = sh.bash.bake('-c')
+
+
+class PowerMonitor():
+
+    def __init__(self,
+                 logger, 
+                 hwmon_root="/sys/bus/i2c/drivers/ina3221/1-0040/hwmon/hwmon",
+                 SOCTHERM_OC=3,
+                 sudo=False) -> None:
+        self._sudo = sudo
+        self.logger = logger
+        self._hwmon_root = f"{hwmon_root}{SOCTHERM_OC}"
+
+    @property
+    def VDD_IN(self):
+        if self._sudo:
+            with open(f'{self._hwmon_root}/curr1_input', 'r') as f:
+                current = f.read().rstrip('\n')
+            with open(f'{self._hwmon_root}/in1_input', 'r') as f:
+                voltage = f.read().rstrip('\n')
+        else:
+            current = sh.cat(f'{self._hwmon_root}/curr1_input')
+            current = decode(current)
+            voltage = sh.cat(f'{self._hwmon_root}/in1_input')
+            voltage = decode(current)
+        
+        res = dict(current=current, voltage=voltage)
+        self.logger.debug(f"vdd_in\t{res}")
+        return res    
+    
+    @property
+    def VDD_CPU_GPU_CV(self):
+        if self._sudo:
+            with open(f'{self._hwmon_root}/curr2_input', 'r') as f:
+                current = f.read().rstrip('\n')
+            with open(f'{self._hwmon_root}/in2_input', 'r') as f:
+                voltage = f.read().rstrip('\n')
+        else:
+            current = sh.cat(f'{self._hwmon_root}/curr2_input')
+            current = decode(current)
+            voltage = sh.cat(f'{self._hwmon_root}/in2_input')
+            voltage = decode(current)
+
+        res = dict(current=current, voltage=voltage)
+        self.logger.debug(f"vdd_cpu_gpu_cv\t{res}")
+        return res
+
+    @property
+    def VDD_SOC(self):
+        if self._sudo:
+            with open(f'{self._hwmon_root}/curr3_input', 'r') as f:
+                current = f.read().rstrip('\n')
+            with open(f'{self._hwmon_root}/in3_input', 'r') as f:
+                voltage = f.read().rstrip('\n')
+        else:
+            current = sh.cat(f'{self._hwmon_root}/curr3_input')
+            current = decode(current)
+            voltage = sh.cat(f'{self._hwmon_root}/in3_input')
+            voltage = decode(current)
+
+        res = dict(current=current, voltage=voltage)
+        self.logger.debug(f"vdd_soc\t{res}")
+        return res
 
 
 class Component():
@@ -864,11 +927,12 @@ class OrinNanoFAN(Component):
 
 class BaseController(object):
 
-    def __init__(self, logger, gpu, cpu, fan) -> None:
+    def __init__(self, logger, gpu, cpu, fan, power_monitor=None) -> None:
         self.logger = logger
         self.GPU = gpu
         self.CPU = cpu
         self.FAN = fan
+        self.PowerMonitor = power_monitor
         self._reset()
 
     def _reset(self):
@@ -882,7 +946,7 @@ class BaseController(object):
         return Device_Specs(
             CPU=self.CPU.specs,
             GPU=self.GPU.specs,
-            FAN=self.FAN.specs
+            FAN=self.FAN.specs,
         )._asdict()
     
     @specs.setter
@@ -928,8 +992,6 @@ class BaseController(object):
 
         # Restore fan control status
         self.FAN.control = control_flag
-       
-
     
 
 class TX2Controller(BaseController):
@@ -962,12 +1024,22 @@ class OrinNanoController(BaseController):
         gpu = OrinNanoGPU(logger, sudo=sudo)
         cpu = OrinNanoCPU(logger, sudo=sudo)
         fan = OrinNanoFAN(logger, sudo=sudo)
+        power_monitor = PowerMonitor(logger, sudo=sudo, hwmon_root='/sys/bus/i2c/drivers/ina3221/1-0040/hwmon/hwmon', SOCTHERM_OC=3)
         logger.info(f"Root Mode: {sudo}")
         if not sudo:
             logger.warning(f"Slower if without sudo permission")
         
-        super(OrinNanoController, self).__init__(logger=logger, gpu=gpu, cpu=cpu, fan=fan)
+        super(OrinNanoController, self).__init__(logger=logger, gpu=gpu, cpu=cpu, fan=fan, power_monitor=power_monitor)
         self.CPU.min_freq = self.CPU.FREQ[0]
+
+    @property
+    def specs(self):
+        return Device_power_Specs(
+            CPU=self.CPU.specs,
+            GPU=self.GPU.specs,
+            FAN=self.FAN.specs,
+            POWER=self.PowerMonitor.VDD_IN,
+        )._asdict()
 
     def _reset(self):
         self.logger.info('Reset configurations')
@@ -979,6 +1051,7 @@ class OrinNanoController(BaseController):
         self.GPU.throttling = 99000
         self.FAN.speed = 0
         self.FAN.control = 1
+
 
 if __name__ == "__main__":
     with OrinNanoController() as controller:

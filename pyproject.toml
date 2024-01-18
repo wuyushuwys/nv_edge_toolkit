@@ -1,6 +1,6 @@
 [project]
 name = "device_toolkit"  # Required
-version = "0.2.5"  # Required
+version = "0.2.6a"  # Required
 description = "Device control toolkit for Nvidia Jetson TX2 and Orin Nano"  # Optional
 readme = "README.md" # Optional
 requires-python = ">=3.8"
