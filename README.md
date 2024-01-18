@@ -55,6 +55,10 @@ controller.reset()
    - frequency (rw)
    - governor (rw)
    - temperature (r)
+ - [PowerMonitor](https://docs.nvidia.com/jetson/archives/r35.4.1/DeveloperGuide/text/SD/PlatformPowerAndPerformance/JetsonOrinNanoSeriesJetsonOrinNxSeriesAndJetsonAgxOrinSeries.html#software-based-power-consumption-modeling)
+   - VDD_IN (r)
+   - VDD_CPU_GPU_CV (r)
+   - VDD_SOC (r)
 
 ## Functions
   - cooldown(temp_bound: int): `cooldown the device until reach [temp_bound]`
