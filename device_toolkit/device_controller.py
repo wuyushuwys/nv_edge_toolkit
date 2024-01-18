@@ -26,7 +26,7 @@ class PowerMonitor():
                  sudo=False) -> None:
         self._sudo = sudo
         self.logger = logger
-        self.mode = mode,
+        self.mode = mode
         self._hwmon_root = f"{hwmon_root}{SOCTHERM_OC}"
 
     def __call__(self):
@@ -37,7 +37,7 @@ class PowerMonitor():
         elif self.mode == 'VDD_SOC':
             return self.VDD_SOC
         else:
-            raise NotImplementedError
+            raise NotImplementedError(f"{self.mode} is not implemented.")
 
     @property
     def VDD_IN(self):
