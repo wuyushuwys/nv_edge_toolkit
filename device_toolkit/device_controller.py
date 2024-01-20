@@ -1055,6 +1055,13 @@ class OrinNanoController(BaseController):
             FAN=self.FAN.specs,
             POWER=self.PowerMonitor(),
         )._asdict()
+    
+    @specs.setter
+    def specs(self, specs: dict):
+        for k, spec_dict in specs.items():
+            module = getattr(self, k)
+            for k, v in spec_dict.items():
+                setattr(module, k, v)
 
     def _reset(self):
         self.logger.info('Reset configurations')
