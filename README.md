@@ -1,9 +1,12 @@
-# Device Toolkit
+# Nvidia Edge Device Toolkit
 
-NVIDIA Jetson Control Toolkit
+NVIDIA Edge Device Control Toolkit
+- Python toolkit to control Nvidia Edge devices
+  -  Tested on TX2, Orin Nano
+- **Current socket communication might not be efficient.**
 
 ## Installation
-`pip install git+https://github.com/wuyushuwys/DeviceToolkit.git`
+`pip install git+https://github.com/wuyushuwys/nv_edge_toolkit.git`
 
 ## Example
 
@@ -13,11 +16,11 @@ from device_toolkit import OrinNanoController
 controller = OrinNanoController(name='orin', verbose=False)
 
 # retrive controller specs
-# You can retrive them by component
+# You can retrieve them by component
 print(controller.FAN.specs)
 print(controller.CPU.specs)
 print(controller.GPU.specs)
-# or retrive them by together
+# or retrieve them by together
 print(controller.specs)
 
 # Set fan pwm (we say speed here) to 0
@@ -32,7 +35,7 @@ controller.GPU.governor = 'userspace'
 # Reset controller to default
 controller.reset()
 ```
-`sudo python examples/example.py` # Using **sudo** for the best efficieny in W/R
+`sudo python examples/example.py` # Using **sudo** for the best efficiency in W/R
 ## Dependencies
  - python3>=3.8
  - sh
